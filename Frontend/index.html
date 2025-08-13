@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Job Application Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="main-container">
+    <!-- Left: Form -->
+    <div class="table-container">
+      <form id="jobApplicationForm">
+        <table class="job-form-table">
+          <tbody>
+            <tr><th>Company</th><td><input type="text" name="company" required /></td></tr>
+            <tr><th>Application Date</th><td><input type="date" name="applicationDate" required /></td></tr>
+            <tr><th>Time</th><td><input type="time" name="applicationTime" /></td></tr>
+            <tr><th>Location</th><td><input type="text" name="location" /></td></tr>
+            <tr><th>Posted Date</th><td><input type="date" name="postedDate" /></td></tr>
+            <tr><th>URL</th><td><input type="text" name="url" /></td></tr>
+          </tbody>
+        </table>
+        <div class="form-buttons">
+          <button type="submit">Submit</button>
+          <button type="reset">Clear</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right: Saved Applications (Delete only) -->
+    <div class="table-container">
+      <h2>Saved Applications</h2>
+
+      <div class="form-buttons">
+        <button id="deleteButton" disabled>Delete</button>
+      </div>
+
+      <table class="applications-table">
+        <thead>
+          <tr>
+            <th style="text-align:center;width:40px;">
+              <input type="checkbox" id="selectAll">
+            </th>
+            <th>Company</th>
+            <th>Application Date</th>
+            <th>Time</th>
+            <th>Location</th>
+            <th>Posted Date</th>
+            <th>URL</th>
+          </tr>
+        </thead>
+        <tbody id="applicationsTableBody"></tbody>
+      </table>
+
+      <pre id="debugDump" style="white-space:pre-wrap;font-size:12px;opacity:.7;margin-top:8px;"></pre>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('jobApplicationForm');
+    const tbody = document.getElementById('applicationsTableBody');
+    const debugDump = document.getElementById('debugDump');
+    const deleteBtn = document.getElementById('deleteButton');
+    const selectAll = document.getElementById('selectAll');
+
+    // --- utils ---
+    const toNumberOrNull = v => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const getSelectedIds = () =>
+      [...document.querySelectorAll('.row-checkbox:checked')]
+        .map(cb => toNumberOrNull(cb.dataset.id ?? cb.value))
+        .filter(id => id !== null);
+
+    function updateDeleteState() {
+      const ids = getSelectedIds();
+      deleteBtn.disabled = ids.length === 0;
+    }
+
+    // --- load & render ---
+    async function loadApplications() {
+      tbody.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
+      try {
+        const res = await fetch('http://localhost:8080/api/applications');
+        if (!res.ok) {
+          const body = await res.text().catch(() => '(no body)');
+          tbody.innerHTML = `<tr><td colspan="7">Error: ${res.status}</td></tr>`;
+          debugDump.textContent = body;
+          return;
+        }
+        const raw = await res.json();
+        const apps = Array.isArray(raw) ? raw : (raw?.content ?? (raw ? [raw] : []));
+
+        if (!apps.length) {
+          tbody.innerHTML = '<tr><td colspan="7">No applications saved yet.</td></tr>';
+          debugDump.textContent = '[]';
+          updateDeleteState();
+          return;
+        }
+
+        tbody.innerHTML = apps.map(app => {
+          const id = app.id ?? app.applicationId ?? app.uuid ?? '';
+          return `
+            <tr>
+              <td style="text-align:center;width:40px;">
+                <input type="checkbox" class="row-checkbox" data-id="${id}">
+              </td>
+              <td>${app.company ?? ''}</td>
+              <td>${app.applicationDate ?? ''}</td>
+              <td>${app.applicationTime ?? ''}</td>
+              <td>${app.location ?? ''}</td>
+              <td>${app.postedDate ?? ''}</td>
+              <td>${app.url ? `<a href="${app.url}" target="_blank">View</a>` : ''}</td>
+            </tr>
+          `;
+        }).join('');
+
+        debugDump.textContent = JSON.stringify(apps, null, 2);
+        updateDeleteState();
+      } catch (err) {
+        console.error('GET error:', err);
+        tbody.innerHTML = '<tr><td colspan="7">Error loading applications.</td></tr>';
+        debugDump.textContent = String(err);
+      }
+    }
+
+    // checkbox change delegation
+    tbody.addEventListener('change', (e) => {
+      if (e.target.classList.contains('row-checkbox')) {
+        updateDeleteState();
+        const all = [...document.querySelectorAll('.row-checkbox')];
+        selectAll.checked = all.length > 0 && all.every(cb => cb.checked);
+      }
+    });
+
+    // select-all
+    selectAll.addEventListener('change', () => {
+      const all = document.querySelectorAll('.row-checkbox');
+      all.forEach(cb => cb.checked = selectAll.checked);
+      updateDeleteState();
+    });
+
+    // --- create (POST) ---
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const data = {};
+      fd.forEach((v, k) => data[k] = v);
+
+      try {
+        const res = await fetch('http://localhost:8080/api/applications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+          const t = await res.text().catch(() => '(no body)');
+          alert('Create failed: ' + res.status + ' ' + t);
+          return;
+        }
+        form.reset();
+        await loadApplications();
+        alert('Created!');
+      } catch (err) {
+        console.error(err);
+        alert('Create error: ' + err.message);
+      }
+    });
+
+    // --- delete (bulk) ---
+    deleteBtn.addEventListener('click', async () => {
+      const ids = getSelectedIds();
+      if (!ids.length) {
+        alert('Select at least one row to delete.');
+        return;
+      }
+      const ok = confirm(`Delete ${ids.length} item(s)?`);
+      if (!ok) return;
+
+      deleteBtn.disabled = true;
+      try {
+        // delete one-by-one; works with @DeleteMapping("/{id}")
+        for (const id of ids) {
+          const url = `http://localhost:8080/api/applications/${id}`;
+          const res = await fetch(url, { method: 'DELETE' });
+          if (!res.ok) {
+            const body = await res.text().catch(() => '(no body)');
+            throw new Error(`DELETE ${url} -> ${res.status} ${body}`);
+          }
+        }
+        await loadApplications();
+        alert('Deleted!');
+      } catch (err) {
+        console.error(err);
+        alert('Delete failed. See console for details.');
+      } finally {
+        deleteBtn.disabled = false;
+        // clear select-all after action
+        selectAll.checked = false;
+        updateDeleteState();
+      }
+    });
+
+    window.onload = loadApplications;
+  </script>
+</body>
+</html>
