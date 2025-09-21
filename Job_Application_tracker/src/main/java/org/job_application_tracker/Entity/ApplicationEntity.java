@@ -5,7 +5,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
 public class ApplicationEntity {
@@ -15,16 +17,16 @@ public class ApplicationEntity {
     private Long id;
 
     private String company;
-    private String applicationDate;
-    private String time;
+    private LocalDate applicationDate;
+    private LocalTime time;
     private String location;
-    private String postedDate;
+    private LocalDate postedDate;
     private String url;
 
     public ApplicationEntity() {
     }
 
-    public ApplicationEntity(String company, String applicationDate, String time, String location, String postedDate, String url) {
+    public ApplicationEntity(String company, LocalDate applicationDate, LocalTime time, String location, LocalDate postedDate, String url) {
         this.company = company;
         this.applicationDate = applicationDate;
         this.time = time;
@@ -49,19 +51,19 @@ public class ApplicationEntity {
         this.company = company;
     }
 
-    public String getApplicationDate() {
+    public LocalDate getApplicationDate() {
         return applicationDate;
     }
 
-    public void setApplicationDate(String applicationDate) {
+    public void setApplicationDate(LocalDate applicationDate) {
         this.applicationDate = applicationDate;
     }
 
-    public String getTime() {
+    public LocalTime getTime() {
         return time;
     }
 
-    public void setTime(String time) {
+    public void setTime(LocalTime time) {
         this.time = time;
     }
 
@@ -73,11 +75,11 @@ public class ApplicationEntity {
         this.location = location;
     }
 
-    public String getPostedDate() {
+    public LocalDate getPostedDate() {
         return postedDate;
     }
 
-    public void setPostedDate(String postedDate) {
+    public void setPostedDate(LocalDate postedDate) {
         this.postedDate = postedDate;
     }
 
@@ -87,17 +89,5 @@ public class ApplicationEntity {
 
     public void setUrl(String url) {
         this.url = url;
-    }
-
-    @Override
-    public String toString() {
-        return "ApplicationEntity{" +
-                "company='" + company + '\'' +
-                ", applicationDate='" + applicationDate + '\'' +
-                ", time='" + time + '\'' +
-                ", location='" + location + '\'' +
-                ", postedDate='" + postedDate + '\'' +
-                ", url='" + url + '\'' +
-                '}';
     }
 }

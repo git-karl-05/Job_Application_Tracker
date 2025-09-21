@@ -1,6 +1,7 @@
 package org.job_application_tracker.Service;
 
-import org.job_application_tracker.DTO.ApplicationDTO;
+import org.job_application_tracker.DTO.ApplicationRequest;
+import org.job_application_tracker.DTO.ApplicationResponse;
 import org.job_application_tracker.Entity.ApplicationEntity;
 import org.job_application_tracker.Repository.ApplicationRepository;
 import org.job_application_tracker.Utility.Mapper;
@@ -19,7 +20,7 @@ public class ApplicationService {
         this.applicationRepository = applicationRepository;
     }
 
-    public ApplicationDTO saveApplication(ApplicationDTO applicationDTO) {
+    public ApplicationResponse saveApplication(ApplicationRequest applicationDTO) {
 
 //        log.info("Converting DTO to Entity: {}", applicationDTO.toString());
         ApplicationEntity applicationEntity = new ApplicationEntity(
@@ -32,25 +33,25 @@ public class ApplicationService {
         );
         ApplicationEntity savedApplicationEntity = applicationRepository.save(applicationEntity);
 //        log.info("Saved Entity: {}", savedApplicationEntity);
-        return Mapper.toDTO(savedApplicationEntity);
+        return Mapper.toResponse(savedApplicationEntity);
     }
 
-    public List<ApplicationDTO> getAllApplications() {
-        List<ApplicationDTO> applicationDTOList = applicationRepository.findAll().stream()
-                .map(Mapper::toDTO)
+    public List<ApplicationResponse> getAllApplications() {
+        List<ApplicationResponse> applicationDTOList = applicationRepository.findAll().stream()
+                .map(Mapper::toResponse)
                 .collect(Collectors.toList());
 
         return applicationDTOList;
     }
 
-    public ApplicationDTO getApplication(Long id) {
+    public ApplicationResponse getApplication(Long id) {
         ApplicationEntity applicationEntity = applicationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Unable to retrieve Applicaion with ID: " + id));
 
-        return Mapper.toDTO(applicationEntity);
+        return Mapper.toResponse(applicationEntity);
     }
 
-    public ApplicationDTO updateApplication(Long id, ApplicationDTO dto) {
+    public ApplicationResponse updateApplication(Long id, ApplicationRequest dto) {
         ApplicationEntity applicationEntity = applicationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Unable to retrieve Applicaion with ID: " + id));
 
@@ -62,12 +63,12 @@ public class ApplicationService {
         applicationEntity.setUrl(dto.getUrl());
 
         ApplicationEntity savedApplicationEntity = applicationRepository.save(applicationEntity);
-        return Mapper.toDTO(savedApplicationEntity);
+        return Mapper.toResponse(savedApplicationEntity);
     }
 
     public void deleteApplication(Long id) {
-        applicationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Unable to retrieve Applicaion with ID: " + id));
+
+        applicationRepository.deleteById(id);
     }
 
 

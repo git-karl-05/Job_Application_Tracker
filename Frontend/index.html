@@ -13,26 +13,47 @@
       <form id="jobApplicationForm">
         <table class="job-form-table">
           <tbody>
-            <tr><th>Company</th><td><input type="text" name="company" required /></td></tr>
-            <tr><th>Application Date</th><td><input type="date" name="applicationDate" required /></td></tr>
-            <tr><th>Time</th><td><input type="time" name="applicationTime" /></td></tr>
-            <tr><th>Location</th><td><input type="text" name="location" /></td></tr>
-            <tr><th>Posted Date</th><td><input type="date" name="postedDate" /></td></tr>
-            <tr><th>URL</th><td><input type="text" name="url" /></td></tr>
+            <tr>
+              <th>Company</th>
+              <td><input type="text" name="company" required /></td>
+            </tr>
+            <tr>
+              <th>Application Date</th>
+              <td><input type="date" name="applicationDate" required /></td>
+            </tr>
+            <tr>
+              <th>Time</th>
+              <td><input type="time" name="time" /></td>
+            </tr>
+            <tr>
+              <th>Location</th>
+              <td><input type="text" name="location" required /></td>
+            </tr>
+            <tr>
+              <th>Posted Date</th>
+              <td><input type="date" name="postedDate" required /></td>
+            </tr>
+            <tr>
+              <th>URL</th>
+              <td><input type="text" name="url" /></td>
+            </tr>
           </tbody>
         </table>
+
         <div class="form-buttons">
-          <button type="submit">Submit</button>
+          <button type="submit" id="submitBtn">Submit</button>
+          <button type="button" id="cancelEditBtn">Cancel Edit</button>
           <button type="reset">Clear</button>
         </div>
       </form>
     </div>
 
-    <!-- Right: Saved Applications (Delete only) -->
+    <!-- Right: Saved Applications -->
     <div class="table-container">
       <h2>Saved Applications</h2>
 
       <div class="form-buttons">
+        <button id="updateButton" disabled>Update</button>
         <button id="deleteButton" disabled>Delete</button>
       </div>
 
@@ -52,98 +73,141 @@
         </thead>
         <tbody id="applicationsTableBody"></tbody>
       </table>
-
-      <pre id="debugDump" style="white-space:pre-wrap;font-size:12px;opacity:.7;margin-top:8px;"></pre>
     </div>
   </div>
 
   <script>
     const form = document.getElementById('jobApplicationForm');
     const tbody = document.getElementById('applicationsTableBody');
-    const debugDump = document.getElementById('debugDump');
+    const updateBtn = document.getElementById('updateButton');
     const deleteBtn = document.getElementById('deleteButton');
     const selectAll = document.getElementById('selectAll');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const submitBtn = document.getElementById('submitBtn');
 
-    // --- utils ---
-    const toNumberOrNull = v => {
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
-    };
+    // --- Track edit mode ---
+    let editingId = null;
 
-    const getSelectedIds = () =>
-      [...document.querySelectorAll('.row-checkbox:checked')]
-        .map(cb => toNumberOrNull(cb.dataset.id ?? cb.value))
-        .filter(id => id !== null);
-
-    function updateDeleteState() {
-      const ids = getSelectedIds();
-      deleteBtn.disabled = ids.length === 0;
+    // --- Helper functions ---
+    function getSelectedIds() {
+      return Array.from(document.querySelectorAll('.row-checkbox:checked'))
+        .map(cb => cb.dataset.id)
+        .filter(id => id && id.trim().length > 0);
     }
 
-    // --- load & render ---
+    function updateButtonsState() {
+      const ids = getSelectedIds();
+      deleteBtn.disabled = ids.length === 0;
+      updateBtn.disabled = ids.length !== 1; // update only works if 1 row is selected
+    }
+
+    // --- Load applications ---
     async function loadApplications() {
       tbody.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
       try {
         const res = await fetch('http://localhost:8080/api/applications');
         if (!res.ok) {
-          const body = await res.text().catch(() => '(no body)');
           tbody.innerHTML = `<tr><td colspan="7">Error: ${res.status}</td></tr>`;
-          debugDump.textContent = body;
           return;
         }
-        const raw = await res.json();
-        const apps = Array.isArray(raw) ? raw : (raw?.content ?? (raw ? [raw] : []));
-
+        const apps = await res.json();
         if (!apps.length) {
           tbody.innerHTML = '<tr><td colspan="7">No applications saved yet.</td></tr>';
-          debugDump.textContent = '[]';
-          updateDeleteState();
           return;
         }
 
-        tbody.innerHTML = apps.map(app => {
-          const id = app.id ?? app.applicationId ?? app.uuid ?? '';
-          return `
-            <tr>
-              <td style="text-align:center;width:40px;">
-                <input type="checkbox" class="row-checkbox" data-id="${id}">
-              </td>
-              <td>${app.company ?? ''}</td>
-              <td>${app.applicationDate ?? ''}</td>
-              <td>${app.applicationTime ?? ''}</td>
-              <td>${app.location ?? ''}</td>
-              <td>${app.postedDate ?? ''}</td>
-              <td>${app.url ? `<a href="${app.url}" target="_blank">View</a>` : ''}</td>
-            </tr>
-          `;
-        }).join('');
+        tbody.innerHTML = apps.map(app => `
+          <tr>
+            <td style="text-align:center;width:40px;">
+              <input type="checkbox" class="row-checkbox" data-id="${app.id}">
+            </td>
+            <td>${app.company ?? ''}</td>
+            <td>${app.applicationDate ?? ''}</td>
+            <td>${app.time ?? ''}</td>
+            <td>${app.location ?? ''}</td>
+            <td>${app.postedDate ?? ''}</td>
+            <td>${app.url ? `<a href="${app.url}" target="_blank">View</a>` : ''}</td>
+          </tr>
+        `).join('');
 
-        debugDump.textContent = JSON.stringify(apps, null, 2);
-        updateDeleteState();
+        selectAll.checked = false;
+        updateButtonsState();
       } catch (err) {
-        console.error('GET error:', err);
+        console.error(err);
         tbody.innerHTML = '<tr><td colspan="7">Error loading applications.</td></tr>';
-        debugDump.textContent = String(err);
       }
     }
 
-    // checkbox change delegation
+    // --- Delete selected ---
+    async function deleteSelectedIndividually() {
+      const ids = getSelectedIds();
+      if (ids.length === 0) return;
+      if (!confirm(`Delete ${ids.length} selected item(s)?`)) return;
+
+      try {
+        const results = await Promise.all(ids.map(id =>
+          fetch(`http://localhost:8080/api/applications/${encodeURIComponent(id)}`, {
+            method: 'DELETE'
+          })
+        ));
+
+        const failures = results.filter(r => !r.ok);
+        if (failures.length) {
+          alert(`Some deletes failed (${failures.length}/${results.length}).`);
+        }
+        await loadApplications();
+      } catch (err) {
+        console.error(err);
+        alert('Delete error: ' + err.message);
+      }
+    }
+
+    // --- Checkbox handling ---
     tbody.addEventListener('change', (e) => {
       if (e.target.classList.contains('row-checkbox')) {
-        updateDeleteState();
-        const all = [...document.querySelectorAll('.row-checkbox')];
+        updateButtonsState();
+        const all = Array.from(document.querySelectorAll('.row-checkbox'));
         selectAll.checked = all.length > 0 && all.every(cb => cb.checked);
       }
     });
 
-    // select-all
     selectAll.addEventListener('change', () => {
-      const all = document.querySelectorAll('.row-checkbox');
-      all.forEach(cb => cb.checked = selectAll.checked);
-      updateDeleteState();
+      document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = selectAll.checked);
+      updateButtonsState();
     });
 
-    // --- create (POST) ---
+    deleteBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      deleteSelectedIndividually();
+    });
+
+    // --- Update selected ---
+    updateBtn.addEventListener('click', () => {
+      const ids = getSelectedIds();
+      if (ids.length !== 1) return;
+      const id = ids[0];
+      const row = document.querySelector(`.row-checkbox[data-id="${id}"]`).closest('tr');
+      const cells = row.querySelectorAll('td');
+
+      form.company.value = cells[1].textContent;
+      form.applicationDate.value = cells[2].textContent;
+      form.time.value = cells[3].textContent;
+      form.location.value = cells[4].textContent;
+      form.postedDate.value = cells[5].textContent;
+      form.url.value = cells[6].querySelector('a')?.getAttribute('href') || '';
+
+      editingId = id;
+      submitBtn.textContent = "Save Update";
+    });
+
+    // --- Cancel edit ---
+    cancelEditBtn.addEventListener('click', () => {
+      form.reset();
+      editingId = null;
+      submitBtn.textContent = "Submit";
+    });
+
+    // --- Create or update application ---
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(form);
@@ -151,59 +215,34 @@
       fd.forEach((v, k) => data[k] = v);
 
       try {
-        const res = await fetch('http://localhost:8080/api/applications', {
-          method: 'POST',
+        const url = editingId
+          ? `http://localhost:8080/api/applications/${encodeURIComponent(editingId)}`
+          : 'http://localhost:8080/api/applications';
+
+        const method = editingId ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
         });
+
         if (!res.ok) {
-          const t = await res.text().catch(() => '(no body)');
-          alert('Create failed: ' + res.status + ' ' + t);
+          alert(`${method} failed: ${res.status}`);
           return;
         }
+
         form.reset();
+        editingId = null;
+        submitBtn.textContent = "Submit";
         await loadApplications();
-        alert('Created!');
       } catch (err) {
         console.error(err);
-        alert('Create error: ' + err.message);
+        alert(`${editingId ? 'Update' : 'Create'} error: ` + err.message);
       }
     });
 
-    // --- delete (bulk) ---
-    deleteBtn.addEventListener('click', async () => {
-      const ids = getSelectedIds();
-      if (!ids.length) {
-        alert('Select at least one row to delete.');
-        return;
-      }
-      const ok = confirm(`Delete ${ids.length} item(s)?`);
-      if (!ok) return;
-
-      deleteBtn.disabled = true;
-      try {
-        // delete one-by-one; works with @DeleteMapping("/{id}")
-        for (const id of ids) {
-          const url = `http://localhost:8080/api/applications/${id}`;
-          const res = await fetch(url, { method: 'DELETE' });
-          if (!res.ok) {
-            const body = await res.text().catch(() => '(no body)');
-            throw new Error(`DELETE ${url} -> ${res.status} ${body}`);
-          }
-        }
-        await loadApplications();
-        alert('Deleted!');
-      } catch (err) {
-        console.error(err);
-        alert('Delete failed. See console for details.');
-      } finally {
-        deleteBtn.disabled = false;
-        // clear select-all after action
-        selectAll.checked = false;
-        updateDeleteState();
-      }
-    });
-
+    // --- Init ---
     window.onload = loadApplications;
   </script>
 </body>

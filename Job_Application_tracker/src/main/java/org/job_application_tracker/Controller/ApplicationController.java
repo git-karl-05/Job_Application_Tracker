@@ -1,7 +1,9 @@
 package org.job_application_tracker.Controller;
 
 
-import org.job_application_tracker.DTO.ApplicationDTO;
+import jakarta.validation.Valid;
+import org.job_application_tracker.DTO.ApplicationRequest;
+import org.job_application_tracker.DTO.ApplicationResponse;
 import org.job_application_tracker.Service.ApplicationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,18 +23,18 @@ public class ApplicationController {
     }
 
     @PostMapping
-    public ResponseEntity<ApplicationDTO> saveApplication(@RequestBody ApplicationDTO applicationDTO) {
-        ApplicationDTO savedDTO = applicationService.saveApplication(applicationDTO);
+    public ResponseEntity<ApplicationResponse> saveApplication(@Valid @RequestBody ApplicationRequest applicationDTO) {
+        ApplicationResponse savedDTO = applicationService.saveApplication(applicationDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDTO);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApplicationDTO> getApplicationById(@PathVariable Long id) {
+    public ResponseEntity<ApplicationResponse> getApplicationById(@PathVariable Long id) {
         return ResponseEntity.ok(applicationService.getApplication(id));
     }
 
     @GetMapping()
-    public ResponseEntity<List<ApplicationDTO>> getAllApplications() {
+    public ResponseEntity<List<ApplicationResponse>> getAllApplications() {
         return ResponseEntity.ok(applicationService.getAllApplications());
     }
 
@@ -42,9 +44,9 @@ public class ApplicationController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping
-    public ResponseEntity<ApplicationDTO> updateApplication(@PathVariable Long id, @RequestBody ApplicationDTO applicationDTO) {
-        ApplicationDTO updatedDTO = applicationService.updateApplication(id, applicationDTO);
+    @PutMapping("/{id}")
+    public ResponseEntity<ApplicationResponse> updateApplication(@PathVariable Long id, @Valid @RequestBody ApplicationRequest applicationDTO) {
+        ApplicationResponse updatedDTO = applicationService.updateApplication(id, applicationDTO);
         return ResponseEntity.ok(updatedDTO);
     }
 
