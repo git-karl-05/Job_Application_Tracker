@@ -6,7 +6,12 @@ import org.job_application_tracker.Entity.ApplicationEntity;
 import org.job_application_tracker.Repository.ApplicationRepository;
 import org.job_application_tracker.Utility.Mapper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,10 +20,18 @@ import java.util.stream.Collectors;
 public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
+    private final Path uploadDir = Paths.get("uploads");
+
+    public ApplicationService() throws IOException {
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
+    }
 
     public ApplicationService(ApplicationRepository applicationRepository) {
         this.applicationRepository = applicationRepository;
     }
+
 
     public ApplicationResponse saveApplication(ApplicationRequest applicationDTO) {
 
@@ -34,6 +47,21 @@ public class ApplicationService {
         ApplicationEntity savedApplicationEntity = applicationRepository.save(applicationEntity);
 //        log.info("Saved Entity: {}", savedApplicationEntity);
         return Mapper.toResponse(savedApplicationEntity);
+    }
+
+    public ApplicationResponse saveApplicationForm(ApplicationRequest applicationRequest, MultipartFile document) {
+
+
+
+
+        ApplicationEntity applicationEntity = new ApplicationEntity(
+                applicationRequest.getCompany(),
+                applicationRequest.getApplicationDate(),
+                applicationRequest.getTime(),
+                applicationRequest.getLocation(),
+                applicationRequest.getPostedDate(),
+                applicationRequest.getUrl()
+        );
     }
 
     public List<ApplicationResponse> getAllApplications() {

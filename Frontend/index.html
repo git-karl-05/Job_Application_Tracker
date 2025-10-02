@@ -5,38 +5,74 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Job Application Tracker</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Sidebar styles */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 60px;
+      height: 100%;
+      background-color: #1e1e1e;
+      border-right: 1px solid #444;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      gap: 1.5rem;
+    }
+    .sidebar a {
+      text-decoration: none;
+      font-size: 24px;
+      color: #fff;
+      transition: color 0.2s;
+    }
+    .sidebar a:hover {
+      color: #62b5e5;
+    }
+    .main-container {
+      margin-left: 80px;
+    }
+
+    /* Space below buttons */
+    .form-buttons.table-actions {
+      margin-bottom: 1rem;
+    }
+
+    /* Sorting arrow layout */
+    .sortable-header {
+      display: flex;
+      justify-content: space-between; /* text left, arrow right */
+      align-items: center;
+      cursor: pointer;
+    }
+    .sort-arrow {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-left: 8px;
+    }
+  </style>
 </head>
 <body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <a href="main.html" title="Main Page">🏠</a>
+    <a href="chat.html" title="Chatbox">💬</a>
+  </div>
+
   <div class="main-container">
     <!-- Left: Form -->
     <div class="table-container">
-      <form id="jobApplicationForm">
+      <form id="jobApplicationForm" enctype="multipart/form-data">
         <table class="job-form-table">
           <tbody>
-            <tr>
-              <th>Company</th>
-              <td><input type="text" name="company" required /></td>
-            </tr>
-            <tr>
-              <th>Application Date</th>
-              <td><input type="date" name="applicationDate" required /></td>
-            </tr>
-            <tr>
-              <th>Time</th>
-              <td><input type="time" name="time" /></td>
-            </tr>
-            <tr>
-              <th>Location</th>
-              <td><input type="text" name="location" required /></td>
-            </tr>
-            <tr>
-              <th>Posted Date</th>
-              <td><input type="date" name="postedDate" required /></td>
-            </tr>
-            <tr>
-              <th>URL</th>
-              <td><input type="text" name="url" /></td>
-            </tr>
+            <tr><th>Company</th><td><input type="text" name="company" required /></td></tr>
+            <tr><th>Application Date</th><td><input type="date" name="applicationDate" required /></td></tr>
+            <tr><th>Time</th><td><input type="time" name="time" /></td></tr>
+            <tr><th>Location</th><td><input type="text" name="location" required /></td></tr>
+            <tr><th>Posted Date</th><td><input type="date" name="postedDate" required /></td></tr>
+            <tr><th>URL</th><td><input type="text" name="url" /></td></tr>
+            <tr><th>Document</th><td><input type="file" name="document" /></td></tr>
           </tbody>
         </table>
 
@@ -52,7 +88,7 @@
     <div class="table-container">
       <h2>Saved Applications</h2>
 
-      <div class="form-buttons">
+      <div class="form-buttons table-actions">
         <button id="updateButton" disabled>Update</button>
         <button id="deleteButton" disabled>Delete</button>
       </div>
@@ -63,12 +99,13 @@
             <th style="text-align:center;width:40px;">
               <input type="checkbox" id="selectAll">
             </th>
-            <th>Company</th>
-            <th>Application Date</th>
-            <th>Time</th>
-            <th>Location</th>
-            <th>Posted Date</th>
-            <th>URL</th>
+            <th><div class="sortable-header"><span>Company</span><span class="sort-arrow">▾</span></div></th>
+            <th><div class="sortable-header"><span>Application Date</span><span class="sort-arrow">▾</span></div></th>
+            <th><div class="sortable-header"><span>Time</span><span class="sort-arrow">▾</span></div></th>
+            <th><div class="sortable-header"><span>Location</span><span class="sort-arrow">▾</span></div></th>
+            <th><div class="sortable-header"><span>Posted Date</span><span class="sort-arrow">▾</span></div></th>
+            <th><div class="sortable-header"><span>URL</span><span class="sort-arrow">▾</span></div></th>
+            <th><div class="sortable-header"><span>Document</span><span class="sort-arrow">▾</span></div></th>
           </tr>
         </thead>
         <tbody id="applicationsTableBody"></tbody>
@@ -85,10 +122,10 @@
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     const submitBtn = document.getElementById('submitBtn');
 
-    // --- Track edit mode ---
     let editingId = null;
+    let currentSort = { column: null, direction: 'asc' };
 
-    // --- Helper functions ---
+    // --- Helpers ---
     function getSelectedIds() {
       return Array.from(document.querySelectorAll('.row-checkbox:checked'))
         .map(cb => cb.dataset.id)
@@ -97,22 +134,30 @@
 
     function updateButtonsState() {
       const ids = getSelectedIds();
-      deleteBtn.disabled = ids.length === 0;
-      updateBtn.disabled = ids.length !== 1; // update only works if 1 row is selected
+      if (ids.length === 0) {
+        deleteBtn.disabled = true;
+        updateBtn.disabled = true;
+      } else if (ids.length === 1) {
+        deleteBtn.disabled = false;
+        updateBtn.disabled = false;
+      } else {
+        deleteBtn.disabled = false;
+        updateBtn.disabled = true;
+      }
     }
 
     // --- Load applications ---
     async function loadApplications() {
-      tbody.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8">Loading…</td></tr>';
       try {
         const res = await fetch('http://localhost:8080/api/applications');
         if (!res.ok) {
-          tbody.innerHTML = `<tr><td colspan="7">Error: ${res.status}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="8">Error: ${res.status}</td></tr>`;
           return;
         }
         const apps = await res.json();
         if (!apps.length) {
-          tbody.innerHTML = '<tr><td colspan="7">No applications saved yet.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8">No applications saved yet.</td></tr>';
           return;
         }
 
@@ -127,14 +172,16 @@
             <td>${app.location ?? ''}</td>
             <td>${app.postedDate ?? ''}</td>
             <td>${app.url ? `<a href="${app.url}" target="_blank">View</a>` : ''}</td>
+            <td>${app.documentUrl ? `<a href="${app.documentUrl}" target="_blank">Download</a>` : ''}</td>
           </tr>
         `).join('');
 
         selectAll.checked = false;
         updateButtonsState();
+        updateSortIndicators();
       } catch (err) {
         console.error(err);
-        tbody.innerHTML = '<tr><td colspan="7">Error loading applications.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8">Error loading applications.</td></tr>';
       }
     }
 
@@ -150,7 +197,6 @@
             method: 'DELETE'
           })
         ));
-
         const failures = results.filter(r => !r.ok);
         if (failures.length) {
           alert(`Some deletes failed (${failures.length}/${results.length}).`);
@@ -160,6 +206,54 @@
         console.error(err);
         alert('Delete error: ' + err.message);
       }
+    }
+
+    // --- Sorting ---
+    function sortTableByColumn(columnIndex) {
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      if (!rows.length || rows[0].querySelector('td[colspan]')) return;
+
+      const isAsc = currentSort.column === columnIndex && currentSort.direction === 'asc';
+      currentSort = { column: columnIndex, direction: isAsc ? 'desc' : 'asc' };
+
+      rows.sort((a, b) => {
+        const aText = a.querySelectorAll('td')[columnIndex].textContent.trim();
+        const bText = b.querySelectorAll('td')[columnIndex].textContent.trim();
+
+        const aVal = Date.parse(aText) || parseFloat(aText) || aText.toLowerCase();
+        const bVal = Date.parse(bText) || parseFloat(bText) || bText.toLowerCase();
+
+        if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      tbody.innerHTML = '';
+      rows.forEach(row => tbody.appendChild(row));
+      updateSortIndicators();
+    }
+
+    function updateSortIndicators() {
+      document.querySelectorAll('.applications-table th').forEach((th, idx) => {
+        if (idx === 0) {
+          th.innerHTML = '<input type="checkbox" id="selectAll">';
+        } else {
+          const arrowEl = th.querySelector(".sort-arrow");
+          if (!arrowEl) return;
+          let arrow = '▾'; // neutral
+          if (idx === currentSort.column) {
+            arrow = currentSort.direction === 'asc' ? '▲' : '▼';
+          }
+          arrowEl.textContent = arrow;
+        }
+      });
+
+      // reattach selectAll
+      document.getElementById('selectAll').addEventListener('change', () => {
+        const all = document.querySelectorAll('.row-checkbox');
+        all.forEach(cb => cb.checked = selectAll.checked);
+        updateButtonsState();
+      });
     }
 
     // --- Checkbox handling ---
@@ -172,7 +266,8 @@
     });
 
     selectAll.addEventListener('change', () => {
-      document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = selectAll.checked);
+      const all = document.querySelectorAll('.row-checkbox');
+      all.forEach(cb => cb.checked = selectAll.checked);
       updateButtonsState();
     });
 
@@ -200,32 +295,23 @@
       submitBtn.textContent = "Save Update";
     });
 
-    // --- Cancel edit ---
     cancelEditBtn.addEventListener('click', () => {
       form.reset();
       editingId = null;
       submitBtn.textContent = "Submit";
     });
 
-    // --- Create or update application ---
+    // --- Create or update ---
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(form);
-      const data = {};
-      fd.forEach((v, k) => data[k] = v);
 
       try {
         const url = editingId
           ? `http://localhost:8080/api/applications/${encodeURIComponent(editingId)}`
           : 'http://localhost:8080/api/applications';
-
         const method = editingId ? 'PUT' : 'POST';
-
-        const res = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
+        const res = await fetch(url, { method, body: fd });
 
         if (!res.ok) {
           alert(`${method} failed: ${res.status}`);
@@ -243,7 +329,14 @@
     });
 
     // --- Init ---
-    window.onload = loadApplications;
+    window.onload = () => {
+      loadApplications();
+      document.querySelectorAll('.applications-table th').forEach((th, idx) => {
+        if (idx === 0) return; // skip selectAll col
+        th.addEventListener('click', () => sortTableByColumn(idx));
+      });
+      updateSortIndicators();
+    };
   </script>
 </body>
 </html>

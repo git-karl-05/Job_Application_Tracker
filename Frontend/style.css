@@ -5,74 +5,76 @@ body {
     background-color: #121212;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #fff;
-  }
+}
   
-  /* Flex container for layout */
-  .main-container {
+/* Flex container for layout */
+.main-container {
     display: flex;
     gap: 2rem;
     align-items: flex-start;
-  }
+}
   
-  /* Form Container */
-  .table-container {
+/* Form Container */
+.table-container {
     max-width: 600px;
     border: 1px solid #444;
     border-radius: 8px;
     padding: 1rem;
     background-color: #1e1e1e;
     flex: 1;
-  }
+}
   
-  .job-form-table {
+.job-form-table {
     width: 100%;
     border-collapse: collapse;
     background-color: #1e1e1e;
-  }
+}
   
-  .job-form-table th,
-  .job-form-table td {
+.job-form-table th,
+.job-form-table td {
     padding: 12px 16px;
     border: 1px solid #333;
     vertical-align: top;
     color: #f0f0f0;
-  }
+}
   
-  .job-form-table th {
+.job-form-table th {
     background-color: #2c2c2c;
     text-align: left;
     width: 40%;
     font-weight: 600;
-  }
+}
   
-  .job-form-table td {
+.job-form-table td {
     background-color: #1e1e1e;
-  }
+}
   
-  input[type="text"],
-  input[type="date"],
-  input[type="time"],
-  input[type="url"] {
+input[type="text"],
+input[type="date"],
+input[type="time"],
+input[type="url"],
+input[type="file"] {
     width: 100%;
     padding: 8px;
     background-color: #2b2b2b;
     border: 1px solid #555;
     color: #fff;
     border-radius: 4px;
-  }
+}
   
-  input::placeholder {
+input::placeholder {
     color: #888;
-  }
+}
   
-  .form-buttons {
+.form-buttons {
     margin-top: 1rem;
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
-  }
+}
   
-  button {
+/* Buttons */
+button {
     padding: 10px 20px;
     font-size: 16px;
     border: none;
@@ -80,14 +82,25 @@ body {
     color: white;
     border-radius: 4px;
     cursor: pointer;
-  }
+    transition: background 0.2s ease;
+}
   
-  button:hover {
-    background-color: #666;
-  }
+/* Hover only when enabled */
+button:hover:enabled {
+    background-color: #666; /* lighter shade */
+}
   
-  /* Saved Applications */
-  .applications-display {
+/* Disabled buttons */
+button:disabled {
+    background-color: #2a2a2a; /* greyed out */
+    color: #aaa;
+    cursor: not-allowed;
+    opacity: 0.7;
+    pointer-events: none; /* no hover effect */
+}
+  
+/* Saved Applications */
+.applications-display {
     flex: 1;
     padding: 1rem;
     border: 1px solid #444;
@@ -95,14 +108,14 @@ body {
     border-radius: 8px;
     max-height: 700px;
     overflow-y: auto;
-  }
+}
   
-  .applications-display h2 {
+.applications-display h2 {
     margin-top: 0;
     color: #fff;
-  }
+}
   
-  .application-card {
+.application-card {
     border: 1px solid #555;
     padding: 0.75rem;
     margin-bottom: 1rem;
@@ -110,63 +123,60 @@ body {
     background-color: #2b2b2b;
     color: #ddd;
     font-size: 14px;
-  }
+}
   
-  .application-card a {
+.application-card a {
     color: #62b5e5;
     text-decoration: none;
-  }
+}
   
-  .application-card a:hover {
+.application-card a:hover {
     text-decoration: underline;
-  }
+}
   
-  .applications-table {
+.applications-table {
     width: 100%;
     border-collapse: collapse;
     background-color: #1e1e1e;
     border: 1px solid #444;
     color: #fff;
     font-size: 14px;
-  }
+}
   
-  .applications-table th,
-  .applications-table td {
+.applications-table th,
+.applications-table td {
     border: 1px solid #444;
     padding: 10px;
     text-align: left;
     vertical-align: top;
-  }
+}
   
-  .applications-table th {
+.applications-table th {
     background-color: #2c2c2c;
     font-weight: bold;
     cursor: pointer; /* helpful when sorting later */
-  }
+}
   
-  .applications-table a {
+.applications-table a {
     color: #62b5e5;
     text-decoration: none;
-  }
-  
-  .applications-table a:hover {
-    text-decoration: underline;
-  }
-
-  .applications-table td:first-child,
-.applications-table th:first-child {
-  text-align: center;
-  width: 40px;
 }
-
-  .table-container h2 {
+  
+.applications-table a:hover {
+    text-decoration: underline;
+}
+  
+.applications-table td:first-child,
+.applications-table th:first-child {
+    text-align: center;
+    width: 40px;
+}
+  
+.table-container h2 {
     margin-top: 0;
     color: #fff;
-  }
+}
   
-  .table-container:not(:first-child) {
+.table-container:not(:first-child) {
     background-color: #191919;
-  }
-  
-
-  
+}

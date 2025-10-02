@@ -2,12 +2,14 @@ package org.job_application_tracker.Controller;
 
 
 import jakarta.validation.Valid;
+import org.apache.coyote.Response;
 import org.job_application_tracker.DTO.ApplicationRequest;
 import org.job_application_tracker.DTO.ApplicationResponse;
 import org.job_application_tracker.Service.ApplicationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -22,9 +24,19 @@ public class ApplicationController {
         this.applicationService = applicationService;
     }
 
-    @PostMapping
-    public ResponseEntity<ApplicationResponse> saveApplication(@Valid @RequestBody ApplicationRequest applicationDTO) {
-        ApplicationResponse savedDTO = applicationService.saveApplication(applicationDTO);
+    @PostMapping(consumes = {"application/json"})
+    public ResponseEntity<ApplicationResponse> saveApplicationJson(
+            @RequestBody ApplicationRequest applicationDTO ) {
+        ApplicationResponse applicationResponse = applicationService.saveApplication(applicationDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(applicationResponse);
+    }
+
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<ApplicationResponse> saveApplicationForm(
+            @Valid @RequestBody ApplicationRequest applicationDTO,
+            @RequestParam(value = "document", required = false)MultipartFile document
+    ) {
+        ApplicationResponse savedDTO = applicationService.saveApplication(applicationDTO, document);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDTO);
     }
 
