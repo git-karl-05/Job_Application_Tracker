@@ -22,17 +22,20 @@ public class ApplicationEntity {
     private String location;
     private LocalDate postedDate;
     private String url;
+    private String documentUrl;
+
 
     public ApplicationEntity() {
     }
 
-    public ApplicationEntity(String company, LocalDate applicationDate, LocalTime time, String location, LocalDate postedDate, String url) {
+    public ApplicationEntity(String company, LocalDate applicationDate, LocalTime time, String location, LocalDate postedDate, String url, String documentUrl) {
         this.company = company;
         this.applicationDate = applicationDate;
         this.time = time;
         this.location = location;
         this.postedDate = postedDate;
         this.url = url;
+        this.documentUrl = documentUrl;
     }
 
     public Long getId() {
@@ -89,5 +92,13 @@ public class ApplicationEntity {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public String getDocumentUrl() {
+        return documentUrl;
+    }
+
+    public void setDocumentUrl(String documentUrl) {
+        this.documentUrl = documentUrl;
     }
 }

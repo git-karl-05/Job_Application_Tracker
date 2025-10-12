@@ -17,7 +17,8 @@ public class Mapper {
                 dto.getTime(),
                 dto.getLocation(),
                 dto.getPostedDate(),
-                dto.getUrl()
+                dto.getUrl(),
+                dto.getDocumentUrl()
         );
     }
 
@@ -29,7 +30,8 @@ public class Mapper {
                 entity.getTime(),
                 entity.getLocation(),
                 entity.getPostedDate(),
-                entity.getUrl()
+                entity.getUrl(),
+                entity.getDocumentUrl()
         );
     }
 }

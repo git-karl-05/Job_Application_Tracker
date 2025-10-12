@@ -20,29 +20,30 @@ import java.util.stream.Collectors;
 public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
-    private final Path uploadDir = Paths.get("uploads");
+    private final Path uploadDir = Paths.get("/Users/kai/Documents/job-tracker-uploads");
 
-    public ApplicationService() throws IOException {
+    public ApplicationService(ApplicationRepository applicationRepository) throws IOException {
+        this.applicationRepository = applicationRepository;
         if (!Files.exists(uploadDir)) {
             Files.createDirectories(uploadDir);
+            System.out.println("Uploads folder created at: " + uploadDir.toAbsolutePath());
+        } else {
+            System.out.println("Uploads folder exists at: " + uploadDir.toAbsolutePath());
         }
     }
 
-    public ApplicationService(ApplicationRepository applicationRepository) {
-        this.applicationRepository = applicationRepository;
-    }
 
-
-    public ApplicationResponse saveApplication(ApplicationRequest applicationDTO) {
+    public ApplicationResponse saveApplication(ApplicationRequest applicationRequest) {
 
 //        log.info("Converting DTO to Entity: {}", applicationDTO.toString());
         ApplicationEntity applicationEntity = new ApplicationEntity(
-                applicationDTO.getCompany(),
-                applicationDTO.getApplicationDate(),
-                applicationDTO.getTime(),
-                applicationDTO.getLocation(),
-                applicationDTO.getPostedDate(),
-                applicationDTO.getUrl()
+                applicationRequest.getCompany(),
+                applicationRequest.getApplicationDate(),
+                applicationRequest.getTime(),
+                applicationRequest.getLocation(),
+                applicationRequest.getPostedDate(),
+                applicationRequest.getUrl(),
+                applicationRequest.getDocumentUrl()
         );
         ApplicationEntity savedApplicationEntity = applicationRepository.save(applicationEntity);
 //        log.info("Saved Entity: {}", savedApplicationEntity);
@@ -50,9 +51,27 @@ public class ApplicationService {
     }
 
     public ApplicationResponse saveApplicationForm(ApplicationRequest applicationRequest, MultipartFile document) {
+        String documentUrl = null;
+
+        if (document != null && !document.isEmpty()) {
+            System.out.println("Received file: " + document.getOriginalFilename());
+            System.out.println("Size: " + document.getSize() + " bytes");
+            System.out.println("Type: " + document.getContentType());
+
+            try {
+                String safeName = document.getOriginalFilename().replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
+                String fileName = System.currentTimeMillis() + "-" + safeName;
+                Path filePath = uploadDir.resolve(fileName);
 
 
+                document.transferTo(filePath.toFile());
 
+                documentUrl = "/uploads/" + fileName;
+            } catch (IOException e) {
+                throw new RuntimeException("Could not save uploaded file: " + document.getOriginalFilename(), e);
+
+            }
+        }
 
         ApplicationEntity applicationEntity = new ApplicationEntity(
                 applicationRequest.getCompany(),
@@ -60,8 +79,12 @@ public class ApplicationService {
                 applicationRequest.getTime(),
                 applicationRequest.getLocation(),
                 applicationRequest.getPostedDate(),
-                applicationRequest.getUrl()
+                applicationRequest.getUrl(),
+                documentUrl
         );
+
+        ApplicationEntity savedEntity = applicationRepository.save(applicationEntity);
+        return Mapper.toResponse(savedEntity);
     }
 
     public List<ApplicationResponse> getAllApplications() {

@@ -27,11 +27,12 @@ public class ApplicationRequest {
     private LocalDate postedDate;
 
     private String url;
+    private String documentUrl;
 
     public ApplicationRequest() {
     }
 
-    public ApplicationRequest(Long id, String company, LocalDate applicationDate, LocalTime time, String location, LocalDate postedDate, String url) {
+    public ApplicationRequest(Long id, String company, LocalDate applicationDate, LocalTime time, String location, LocalDate postedDate, String url, String documentUrl) {
         this.id = id;
         this.company = company;
         this.applicationDate = applicationDate;
@@ -39,6 +40,7 @@ public class ApplicationRequest {
         this.location = location;
         this.postedDate = postedDate;
         this.url = url;
+        this.documentUrl = documentUrl;
     }
 
     public Long getId() {
@@ -95,5 +97,13 @@ public class ApplicationRequest {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public String getDocumentUrl() {
+        return documentUrl;
+    }
+
+    public void setDocumentUrl(String documentUrl) {
+        this.documentUrl = documentUrl;
     }
 }

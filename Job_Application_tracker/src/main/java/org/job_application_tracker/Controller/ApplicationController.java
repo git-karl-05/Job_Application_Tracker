@@ -33,10 +33,10 @@ public class ApplicationController {
 
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<ApplicationResponse> saveApplicationForm(
-            @Valid @RequestBody ApplicationRequest applicationDTO,
-            @RequestParam(value = "document", required = false)MultipartFile document
+            @ModelAttribute ApplicationRequest applicationDTO,
+            @RequestParam(value = "document", required = false) MultipartFile document
     ) {
-        ApplicationResponse savedDTO = applicationService.saveApplication(applicationDTO, document);
+        ApplicationResponse savedDTO = applicationService.saveApplicationForm(applicationDTO, document);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDTO);
     }
 
